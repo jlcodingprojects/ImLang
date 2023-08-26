@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body {
+      background-color: rgb(255, 255, 255);
+      }
+    </style>
+    <span>Choose your function: </span>
+    <select onchange="updateParams(this)" size="1" id="funcs" name="funcs">
+    </select>
+    <div id = "params"></div>
+     <button onclick="exe()">Execute selected function with params</button> 
+     <span>Output:</span>
+     <span id="output"></span>
+  </head>
+<body>
+  <span id="container" style="white-space: pre;"></span>
+  <script>
+    // this is the serialized code.
+    const code = '{base64code}'
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let wasmInstance = null;
+
+    // Use a lookup table to find the index.
+    const lookup = new Uint8Array(256);
+    for (let i = 0; i < chars.length; i++) {
+      lookup[chars.charCodeAt(i)] = i;
+    }
+    
+    function exe() {
+      //var params = document.getElementById("params");
+      var params = [].slice.call(document.getElementById('params').getElementsByTagName('input'),0);
+      var funcName = document.getElementById("funcs").value;
+      console.log(params);
+      
+      var paramValues = params.map(function(child) {
+         return child.value;
+      });
+      
+      console.log(paramValues);
+      console.log(funcName);
+      
+      Object.getOwnPropertyNames(wasmInstance.exports).forEach(fn => 
+      {
+        if(fn == funcName){
+          
+          const val = wasmInstance.exports[fn];
+          
+          const output = val(...paramValues);
+          console.log(output);
+          
+          document.getElementById('output').textContent = output;
+        }
+      });
+    }
+    
+    function updateParams(func) {
+      var div = document.getElementById("params");
+      
+      while (div.firstChild) {
+         div.removeChild(div.firstChild);
+      }
+      
+      var span = document.createElement('span'); 
+      span.textContent = "("; 
+      div.appendChild(span); 
+      Object.getOwnPropertyNames(wasmInstance.exports).forEach(funcName => 
+      {
+        if(funcName == func.value){
+          
+          const val = wasmInstance.exports[funcName];
+          console.log(val.toString());
+          
+          for (var i=0;i<val.length;i++) {
+            var input = document.createElement('input'); 
+            input.type = "text"; 
+            div.appendChild(input);
+          }
+        }
+      });
+      
+      var span = document.createElement('span'); 
+      span.textContent = ")"; 
+      div.appendChild(span); 
+    }
+
+    function decode(base64) {
+      var bufferLength = base64.length * 0.75,
+      len = base64.length, i, p = 0,
+      encoded1, encoded2, encoded3, encoded4;
+
+      if (base64[base64.length - 1] === "=") {
+          bufferLength--;
+        if (base64[base64.length - 2] === "=") {
+          bufferLength--;
+        }
+      }
+
+      var arraybuffer = new ArrayBuffer(bufferLength),
+      bytes = new Uint8Array(arraybuffer);
+
+      for (i = 0; i < len; i+=4) {
+        encoded1 = lookup[base64.charCodeAt(i)];
+        encoded2 = lookup[base64.charCodeAt(i+1)];
+        encoded3 = lookup[base64.charCodeAt(i+2)];
+        encoded4 = lookup[base64.charCodeAt(i+3)];
+
+        bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
+        bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+        bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
+      }
+
+      return arraybuffer;
+    } 
+    const buffer = decode(code)
+
+    // bootstrap the env.
+    const memory = new WebAssembly.Memory({ initial: 256, maximum: 256 })
+    const importObj = {
+      env: {
+        abortStackOverflow: () => { throw new Error('overflow'); },
+        table: new WebAssembly.Table({ initial: 0, maximum: 0, element: 'anyfunc' }),
+        tableBase: 0,
+        memory: memory,
+        memoryBase: 1024,
+        STACKTOP: 0,
+        STACK_MAX: memory.buffer.byteLength,
+      }
+    }
+
+    // instantiate
+    WebAssembly.instantiate(buffer, importObj)
+    // take a look at that _add.
+    .then(({module, instance}) =>
+    {
+      wasmInstance = instance;
+      Object.keys(instance.exports).forEach(e => 
+      {
+        if(e == "memory") return;
+        console.log(e);
+        var select = document.getElementById("funcs");
+        opt = document.createElement("option");
+        opt.value = e;
+        opt.textContent = e;
+        console.log(select);
+        console.log(opt);
+        select.appendChild(opt);
+      });
+      
+    })
+    .catch((err) => { console.log(err.message) })
+  </script>
+</body>
+</html>
+
