@@ -25,10 +25,10 @@ namespace ImLang
             //Console.WriteLine(field);
             //List<Token> tokens = Tokeniser.GetTokenArray(@"return " + field + ";");
             List<Token> tokens = Tokeniser.GetTokenArray(sourceText);
-            Parser parser = new Parser(tokens);
-            parser.Parse();
-            parser.Dump();
-            List<Statement> statements = parser.GetStatements();
+            //Parser parser = new Parser(tokens);
+            //parser.Parse();
+            //parser.Dump();
+            //List<Statement> statements = parser.GetStatements();
 
             var binary = new Binary();
             Func func = new Func("temp");
@@ -39,32 +39,32 @@ namespace ImLang
             //func.setLocalCounts();
             //*
             Console.WriteLine("Printing pretty statements");
-            foreach (Statement s in statements)
-            {
-                s.Tree.PrintPretty("", true);
-                func.PushCode(EncodeStatement(s));
-            }
+            //foreach (Statement s in statements)
+            //{
+            //    //s.Tree.PrintPretty("", true);
+            //    func.PushCode(EncodeStatement(s));
+            //}
 
-            List<byte> temp = EncodeStatement(statements[0]);
-            foreach (byte b in temp)
-            {
-                if (b == 0x6a)
-                {
-                    Console.Write("+");
-                }
-                else if (b == 0x6b)
-                {
-                    Console.Write("-");
-                }
-                else if (b == 0x6c)
-                {
-                    Console.Write("*");
-                }
-                else if (b == 0x6d)
-                {
-                    Console.Write("/");
-                }
-            }
+            //List<byte> temp = EncodeStatement(statements[0]);
+            //foreach (byte b in temp)
+            //{
+            //    if (b == 0x6a)
+            //    {
+            //        Console.Write("+");
+            //    }
+            //    else if (b == 0x6b)
+            //    {
+            //        Console.Write("-");
+            //    }
+            //    else if (b == 0x6c)
+            //    {
+            //        Console.Write("*");
+            //    }
+            //    else if (b == 0x6d)
+            //    {
+            //        Console.Write("/");
+            //    }
+            //}
             //*/
 
 
@@ -77,10 +77,10 @@ namespace ImLang
         {
         	List<byte> code = new List<byte>();
         	
-        	if (s.Tree.Details.Source == "return")
-        	{
-        		code.AddRange(EncodeBinaryExpression(s.Tree.Children[0])); //first expression must be binary expression
-        	}
+        	//if (s.Tree.Details.Source == "return")
+        	//{
+        	//	code.AddRange(EncodeBinaryExpression(s.Tree.Children[0])); //first expression must be binary expression
+        	//}
         	
         	return code;
         }
