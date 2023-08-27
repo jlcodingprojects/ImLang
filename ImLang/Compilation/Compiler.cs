@@ -55,10 +55,6 @@ namespace ImLang.Compilation
 
             var binary = new Binary();
 
-            //Func f = new Func("add");
-            //f.initAddInt();
-            //binary.AddFunction(f);
-            //return binary;
             List<(Func Function, FunctionDeclarationNode Node)> functions = new();
             foreach (var node in root.Functions)
             {
@@ -90,7 +86,7 @@ namespace ImLang.Compilation
                 }
 
                 fn.Function.SetInputParameters(opcodes.ToArray());
-                fn.Function.SetOutputParameters(Types.i32);
+                if(fn.Node.Body.Statements.Any(s => s is ReturnStatement)) fn.Function.SetOutputParameters(Types.i32);
                 //func.SetInputParameters(opcodes.ToArray());
 
 
@@ -122,7 +118,7 @@ namespace ImLang.Compilation
             if (statement is AssignmentStatement assign)
             {
                 var varAddr = getScopedVariableAddress(assign.Target.Value);
-                code.AddRange(Encoder.Concatentate(Op.set_local));
+                code.AddRange(Encoder.Concatentate(Op.i32_const, Encoder.uLEB128(varAddr), binaryExpressionCode(assign.Expression), Op.i32_store));
             }
 
             if (statement is ReturnStatement ret)
@@ -130,8 +126,46 @@ namespace ImLang.Compilation
                 code.AddRange(getCodeForReturnStatement(ret));
             }
 
+            if (statement is IfStatement ifs)
+            {
+                code.AddRange(ifStatementCode(ifs));
+            }
+
+            if (statement is WhileStatement w)
+            {
+                code.AddRange(whileStatementCode(w));
+            }
+
+            if (statement is DrawStatement drawStatement)
+            {
+                code.AddRange(functionCallByIndex(1, drawStatement.Params.ParamList.ToArray()));
+            }
+
+            if (statement is LogStatement logStatement)
+            {
+                code.AddRange(functionCallByIndex(0, logStatement.Expression));
+            }
+
+            if (statement is FunctionCallStatement funcCall)
+            {
+                return functionCallCode(funcCall);
+            }
 
             return code;
+        }
+
+        private static List<byte> functionCallByIndex(int funcIdx, params Node[] paramList)
+        {
+            List<byte> code = new List<byte>();
+            
+            // each param must be a binary expression. Push all params to stack
+            var paramOpcodes = paramList.Select(c => binaryExpressionCode(c)).SelectMany(b => b).ToList();
+
+            var encoded = Encoder.Concatentate(paramOpcodes, Op.call, Encoder.uLEB128(funcIdx));
+
+            string asdf = Encoder.HexString(encoded);
+
+            return encoded;
         }
 
         private static List<byte> getCodeForReturnStatement(ReturnStatement ret)
@@ -139,6 +173,62 @@ namespace ImLang.Compilation
             List<byte> code = new List<byte>();
 
             code.AddRange(binaryExpressionCode(ret.Return));
+
+            return code;
+        }
+
+        private static List<byte> ifStatementCode(IfStatement ifs)
+        {
+            List<byte> code = new List<byte>();
+
+            var left = binaryExpressionCode(ifs.Left);
+            var right = binaryExpressionCode(ifs.Right);
+
+            code.AddRange(left);
+            code.AddRange(right);
+
+            var opcode = ifs.Operator switch
+            {
+                BooleanOperator.Lt => Op.i32_lt_u,
+                BooleanOperator.Gt => Op.i32_gt_u,
+                BooleanOperator.Ne => Op.i32_ne,
+                BooleanOperator.Eq => Op.i32_eq,
+            };
+
+            code.AddRange(opcode);
+
+            code.AddRange(Op._if);
+
+            foreach (var statement in ifs.Body.Statements)
+            {
+                var statementCode = getCodeForStatement(statement);
+                var statementline = Encoder.HexString(statementCode);
+                code.AddRange(statementCode);
+            }
+
+            code.AddRange(Op.end);
+
+            return code;
+        }
+
+        private static List<byte> whileStatementCode(WhileStatement ifs)
+        {
+            List<byte> code = new List<byte>();
+
+            var condition = binaryExpressionCode(ifs.Condition);
+
+            code.AddRange(condition);
+            code.AddRange(Op._if);
+            code.AddRange(Op.loop);
+
+            foreach (var statement in ifs.Body.Statements)
+            {
+                var statementCode = getCodeForStatement(statement);
+                var statementline = Encoder.HexString(statementCode);
+                code.AddRange(statementCode);
+            }
+
+            code.AddRange(Op.end);
 
             return code;
         }
@@ -233,113 +323,6 @@ namespace ImLang.Compilation
 
 
 
-
-        public static Binary BuildBinaryFromSource(string sourceText)
-        {
-            // Binary class will automatically sort functions based on index to ensure the export definition index matches the function code index
-            // This means functions can be added in whatever order desired
-
-            //string[] operators = { "+", "+", "/", "*" };
-            //Random r = new Random();
-            //string field = "";
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    field += (Math.Floor(r.NextDouble() * 100)).ToString();
-            //    field += operators[(int)Math.Floor(r.NextDouble() * 4)];
-            //}
-            //field += (Math.Floor(r.NextDouble() * 100)).ToString();
-
-            //Console.WriteLine(field);
-            //List<Token> tokens = Tokeniser.GetTokenArray(@"return " + field + ";");
-            List<Token> tokens = Tokeniser.GetTokenArray(sourceText);
-            //Parser parser = new Parser(tokens);
-            //parser.Parse();
-            //parser.Dump();
-            //List<Statement> statements = parser.GetStatements();
-
-            var binary = new Binary();
-            Func func = new Func("temp");
-
-            func.SetInputParameters();
-            func.SetOutputParameters(Types.i32);
-            // Todo - work out what this did
-            //func.setLocalCounts();
-            //*
-            Console.WriteLine("Printing pretty statements");
-            //foreach (Statement s in statements)
-            //{
-            //    //s.Tree.PrintPretty("", true);
-            //    func.PushCode(EncodeStatement(s));
-            //}
-
-            //List<byte> temp = EncodeStatement(statements[0]);
-            //foreach (byte b in temp)
-            //{
-            //    if (b == 0x6a)
-            //    {
-            //        Console.Write("+");
-            //    }
-            //    else if (b == 0x6b)
-            //    {
-            //        Console.Write("-");
-            //    }
-            //    else if (b == 0x6c)
-            //    {
-            //        Console.Write("*");
-            //    }
-            //    else if (b == 0x6d)
-            //    {
-            //        Console.Write("/");
-            //    }
-            //}
-            //*/
-
-
-            binary.AddFunction(func);
-
-            return binary;
-        }
-
-        private static List<byte> EncodeStatement(Statement s)
-        {
-            List<byte> code = new List<byte>();
-
-            //if (s.Tree.Details.Source == "return")
-            //{
-            //	code.AddRange(EncodeBinaryExpression(s.Tree.Children[0])); //first expression must be binary expression
-            //}
-
-            return code;
-        }
-
-        private static List<byte> EncodeBinaryExpression(Node n)
-        {
-            List<byte> code = new List<byte>();
-
-            //Console.WriteLine(n.Details.Value);
-
-            //if(n.Details.Group == TokenCode.Number)
-            //{
-            //	code.AddRange(Op.i32_const);
-            //	code.AddRange(Encoder.sLEB128(Int32.Parse(n.Details.Value))); //i32_const accepts signed ints, not unsigned
-            //} else if(n.Details.Group == TokenCode.Expression) {
-            //	code.AddRange(EncodeBinaryExpression(n.Children[0]));
-            //	code.AddRange(EncodeBinaryExpression(n.Children[1]));
-
-            //	if(n.Details.Value == "+") {
-            //		code.AddRange(Op.i32_add);
-            //	} else if(n.Details.Value == "-") {
-            //		code.AddRange(Op.i32_sub);
-            //	} else if(n.Details.Value == "*") {
-            //		code.AddRange(Op.i32_mul);
-            //	} else if(n.Details.Value == "/") {
-            //		code.AddRange(Op.i32_div_s);
-            //	}
-            //}
-
-
-            return code;
-        }
 
         public static Binary MakeLinkedListBinary()
         {

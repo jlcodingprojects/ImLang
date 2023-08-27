@@ -17,6 +17,14 @@ namespace ImLang
             Void,
         }
 
+        public enum BooleanOperator
+        {
+            Lt,
+            Gt,
+            Eq,
+            Ne,
+        }
+
         public enum IdentifierType
         {
             Variable,

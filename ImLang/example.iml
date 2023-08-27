@@ -1,0 +1,17 @@
+fn mul(int32 left, int32 right)
+{
+  int32 result = left * right;
+  return result;
+}
+
+fn add(int32 left, int32 right)
+{
+  int32 result = left + right;
+  return result;
+}
+
+fn drawit(int32 left, int32 right, int32 col)
+{
+  log(left);
+  draw(left, right, col);
+}

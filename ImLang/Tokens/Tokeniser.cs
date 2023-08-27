@@ -22,7 +22,13 @@ namespace ImLang
 
                     if (TokenRegex.FunctionDeclaration.IsMatch(match.Value)) return new Token(TokenType.FunctionDeclaration, TokenGroup.Declaration, match);
                     if (TokenRegex.VariableDeclaration.IsMatch(match.Value)) return new Token(TokenType.VariableDeclaration, TokenGroup.Declaration, match);
-                    if (TokenRegex.Keyword.IsMatch(match.Value)) return new Token(TokenType.Keyword, TokenGroup.Function, match);
+                    
+                    //IfKeyword
+                    if (TokenRegex.IfKeyword.IsMatch(match.Value)) return new Token(TokenType.IfKeyword, TokenGroup.Function, match);
+                    if (TokenRegex.WhileKeyword.IsMatch(match.Value)) return new Token(TokenType.WhileKeyword, TokenGroup.Function, match);
+                    if (TokenRegex.DrawKeyword.IsMatch(match.Value)) return new Token(TokenType.DrawKeyword, TokenGroup.Function, match);
+                    if (TokenRegex.LogKeyword.IsMatch(match.Value)) return new Token(TokenType.LogKeyword, TokenGroup.Function, match);
+                    if (TokenRegex.ReturnKeyword.IsMatch(match.Value)) return new Token(TokenType.ReturnKeyword, TokenGroup.Function, match);
                     if (TokenRegex.VariableDatatype.IsMatch(match.Value)) return new Token(TokenType.VariableDatatype, TokenGroup.Datatype, match);
 
                     if (TokenRegex.Identifier.IsMatch(match.Value)) return new Token(TokenType.Identifier, TokenGroup.Identifier, match);
@@ -30,9 +36,9 @@ namespace ImLang
                     if (TokenRegex.LiteralFloat.IsMatch(match.Value)) return new Token(TokenType.LiteralFloat, TokenGroup.Literal, match);
                     if (TokenRegex.LiteralString.IsMatch(match.Value)) return new Token(TokenType.LiteralString, TokenGroup.Literal, match);
 
+                    if (TokenRegex.BinaryOperator.IsMatch(match.Value)) return new Token(TokenType.BinaryOperator, TokenGroup.BinaryOperator, match);
+                    if (TokenRegex.BooleanOperator.IsMatch(match.Value)) return new Token(TokenType.BooleanOperator, TokenGroup.BooleanOperator, match);
                     if (TokenRegex.Assignment.IsMatch(match.Value)) return new Token(TokenType.Assignment, TokenGroup.Function, match);
-                    if (TokenRegex.BinaryOperator.IsMatch(match.Value)) return new Token(TokenType.BinaryOperator, TokenGroup.Function, match);
-                    if (TokenRegex.EqualityOperator.IsMatch(match.Value)) return new Token(TokenType.EqualityOperator, TokenGroup.Function, match);
 
                     if (TokenRegex.EndOfLine.IsMatch(match.Value)) return new Token(TokenType.EndOfLine, TokenGroup.LineSeparator, match);
                     if (TokenRegex.BracketOpen.IsMatch(match.Value)) return new Token(TokenType.BracketOpen, TokenGroup.Divider, match);
@@ -55,7 +61,7 @@ namespace ImLang
         public static readonly Regex Divider = new Regex(@"([^\s""]+)|(""[^""\n\r]*"")");
         public static readonly Regex NonAlphanumeric = new Regex(@"([^a-zA-Z\d\.""])|(""[^""]*"")");
 
-        public static readonly Regex BigSplit = new Regex(@"([a-zA-Z\d\.]+)|(""[^""\n\r]*"")|([^a-zA-b\d\s])");
+        public static readonly Regex BigSplit = new Regex(@"((==)|(!=)|[a-zA-Z\d\.]+)|(""[^""\n\r]*"")|([^a-zA-b\d\s])");
         //public static readonly Regex NonAlphanumeric = new Regex(@"");
 
         // Match a contiguous whitespace section
@@ -66,7 +72,12 @@ namespace ImLang
         public static readonly Regex VariableDeclaration = new Regex(@"^(var)$");
 
         // Reserved keywords - match entire token
-        public static readonly Regex Keyword = new Regex(@"^(if|while|return|print|setpixel)$");
+        public static readonly Regex IfKeyword = new Regex(@"^(if)$");
+        public static readonly Regex LogKeyword = new Regex(@"^(log)$");
+        public static readonly Regex DrawKeyword = new Regex(@"^(draw)$");
+        public static readonly Regex ReturnKeyword = new Regex(@"^(return)$");
+        public static readonly Regex WhileKeyword = new Regex(@"^(while)$");
+        //public static readonly Regex Keyword = new Regex(@"^(if|while|return|print|setpixel)$");
 
         // Match valid datatype for declaring variables and returning from functions
         public static readonly Regex VariableDatatype = new Regex(@"^(int32)");
@@ -74,7 +85,7 @@ namespace ImLang
         //public static readonly Regex ReturnDatatype = new Regex(@"^(int32|int64|float32|float64|void)");
 
         // a valid identifier - must be declared before using
-        public static readonly Regex Identifier = new Regex(@"^[a-zA-Z][a-zA-Z0-9]+");
+        public static readonly Regex Identifier = new Regex(@"^[a-zA-Z]+[a-zA-Z0-9]*");
 
         // must match entire token for these
         public static readonly Regex LiteralInt = new Regex("(^[0-9]+$)");
@@ -84,7 +95,7 @@ namespace ImLang
         // Expressions and operators
         public static readonly Regex Assignment = new Regex(@"(^=$)");
         public static readonly Regex BinaryOperator = new Regex(@"(\+|\-|\/|\*)");
-        public static readonly Regex EqualityOperator = new Regex(@"(^==$)");
+        public static readonly Regex BooleanOperator = new Regex(@"(^==$)|(^!=$)|(^<$)|(^>$)");
 
         public static readonly Regex EndOfLine = new Regex(@"(;)");
         public static readonly Regex BracketOpen = new Regex(@"(\()");

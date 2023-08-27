@@ -20,7 +20,7 @@
   <span id="container" style="white-space: pre;"></span>
   <script>
     // this is the serialized code.
-    const code = '{base64code}'
+    const code = 'AGFzbQEAAAABEQNgAX8AYAN/f38AYAN/f38AAhYCA2VudgNsb2cAAANlbnYEZHJhdwABAwIBAgUDAQABBxACA21lbQIABmRyYXdpdAACChABDgAgABAAIAAgASACEAEL'
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let wasmInstance = null;
 
@@ -151,7 +151,7 @@
       wasmInstance = instance;
       Object.keys(instance.exports).forEach(e => 
       {
-        if(e == "mem") return;
+        if(e == "memory") return;
         console.log(e);
         var select = document.getElementById("funcs");
         opt = document.createElement("option");

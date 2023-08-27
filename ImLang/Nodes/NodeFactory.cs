@@ -13,14 +13,20 @@ namespace ImLang.Nodes
         {
             if (!validStatementTokens.Any(t => t == iter.Current.TokenGroup)) throw new UnexpectedTokenException(iter.Current, TokenGroup.Function);
 
-            return iter.Current switch
+            var statement = iter.Current switch
             {
                 { TokenGroup: TokenGroup.Datatype } => new VariableDeclarationStatement(iter),
                 { TokenType: TokenType.Identifier } => CreateIdentifierStatement(iter),
-                { Source: "return" } => new ReturnStatement(iter),
+                { TokenType: TokenType.ReturnKeyword } => new ReturnStatement(iter),
+                { TokenType: TokenType.IfKeyword } => new IfStatement(iter),
+                { TokenType: TokenType.WhileKeyword } => new WhileStatement(iter),
+                { TokenType: TokenType.LogKeyword} => new LogStatement(iter),
+                { TokenType: TokenType.DrawKeyword } => new DrawStatement(iter),
                 { TokenType: TokenType.Keyword } => CreateIdentifierStatement(iter),
                 _ => throw new UnexpectedTokenException(iter.Current, TokenGroup.Function)
             };
+
+            return statement;
         }
 
         private static readonly List<TokenGroup> validStatementTokens = new List<TokenGroup>()
@@ -50,6 +56,8 @@ namespace ImLang.Nodes
             iter.MoveNext();
 
             var tokens = getBoundedByBrackets(iter);
+            // Todo: consolidate how bracket consumption works when creating statements so this is never necesssary
+            if (iter.Current.TokenType == TokenType.BracketClose) iter.MoveNext();
 
             tokens.Insert(0, identifierToken);
 
@@ -135,7 +143,12 @@ namespace ImLang.Nodes
             };
         }
 
-        // Parsing an expression tree is complex so do in a factory method
+        /// <summary>
+        /// Create a binary expression
+        /// </summary>
+        /// <param name="iter"></param>
+        /// <param name="terminator">The type of token which will terminate the expression (usually ';', ',', ')')</param>
+        /// <returns></returns>
         public static Node CreateBinaryExpressionTree(IEnumerator<Token> iter, TokenGroup terminator = TokenGroup.LineSeparator)
         {
             List<Token> tokens = new List<Token>();
@@ -186,6 +199,18 @@ namespace ImLang.Nodes
                     var right = CreateBinaryExpressionTree(iter);
                     newNode.Left = prevNode;
                     newNode.Right = right;
+                    
+                    // Check if it needs rotating
+                    if(right is BinaryExpressionNode rightBinary)
+                    {
+                        if(newNode.Operator > rightBinary.Operator)
+                        {
+                            var temp = rightBinary.Left;
+                            rightBinary.Left = newNode;
+                            newNode.Right = temp;
+                            newNode = rightBinary;
+                        }
+                    }
 
 
                     if (rootNode == null)
@@ -194,9 +219,10 @@ namespace ImLang.Nodes
                     }
                     else
                     {
-                        //var temp = rootNode;
+                        var temp = rootNode.Right;
                         //newNode.Right = temp;
                         rootNode.Right = newNode;
+                        newNode.Left = temp;
                     }
                 }
             }

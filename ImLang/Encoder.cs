@@ -390,6 +390,14 @@ namespace ImLang
         public static readonly byte GLOBAL = 0x03;
     }
 
+    public static class ImportType
+    {
+        public static readonly byte FUNC = 0x00;
+        public static readonly byte TABLE = 0x01;
+        public static readonly byte MEM = 0x02;
+        public static readonly byte GLOBAL = 0x03;
+    }
+
     public static class Section
     {
         public static readonly byte CUSTOM = 0x00;

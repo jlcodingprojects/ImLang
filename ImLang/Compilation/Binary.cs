@@ -59,6 +59,14 @@ namespace ImLang.Compilation
             exportDef.Add(ExportType.MEM);
             exportDef.Add(0x00); //memory id 0
 
+            // Typedef for using console.log 
+            typeDef.Add(Types.FUNC);
+            typeDef.AddRange(Encoder.Wrap(new List<byte> { Types.i32 }));
+            typeDef.AddRange(Encoder.Wrap(new List<byte> { }));
+            typeDef.Add(Types.FUNC);
+            typeDef.AddRange(Encoder.Wrap(new List<byte> { Types.i32, Types.i32, Types.i32 }));
+            typeDef.AddRange(Encoder.Wrap(new List<byte> { }));
+
             for (int i = 0; i < functions.Count; i++)
             {
                 funcSection.Add(functions[i].GetIndex()); //encode indicies of each function
@@ -84,18 +92,25 @@ namespace ImLang.Compilation
             //each of the definitions is the Encoder.wrapList() called on all Func.def()
             //which means the first byte will be the function count
             codeDef.InsertRange(0, Encoder.uLEB128(functions.Count));
-            typeDef.InsertRange(0, Encoder.uLEB128(functions.Count));
+            typeDef.InsertRange(0, Encoder.uLEB128(functions.Count + 2));
             exportDef.InsertRange(0, Encoder.uLEB128(exportCount));
 
             memDef.Add(0x00); memDef.Add(0x01); //flags, minimum size
             memDef.InsertRange(0, Encoder.uLEB128(1)); //1 memory object always
 
-            // Only importing 1 function
-            // Import section for console.logg
-            //importDef.AddRange(Encoder.uLEB128(1));
-            //importDef.AddRange(Encoder.EncodeString("console"));
-            //importDef.AddRange(Encoder.EncodeString("log"));
-            //importDef.Add(ExportType.FUNC);
+            // Only importing 2 function
+            // Import section for console.log and custom draw function
+            importDef.AddRange(Encoder.uLEB128(2));
+
+            importDef.AddRange(Encoder.EncodeString("env"));
+            importDef.AddRange(Encoder.EncodeString("log"));
+            importDef.Add(ImportType.FUNC);
+            importDef.AddRange(Encoder.uLEB128(0)); //Index of type definition
+
+            importDef.AddRange(Encoder.EncodeString("env"));
+            importDef.AddRange(Encoder.EncodeString("draw"));
+            importDef.Add(ImportType.FUNC);
+            importDef.AddRange(Encoder.uLEB128(1)); //Index of type definition
 
             typeSection = Encoder.CreateSection(Section.TYPE, typeDef);
 
@@ -104,7 +119,7 @@ namespace ImLang.Compilation
 
             memSection = Encoder.CreateSection(Section.MEMORY, memDef);
             exportSection = Encoder.CreateSection(Section.EXPORT, exportDef);
-            //importSection = Encoder.CreateSection(Section.IMPORT, importDef);
+            importSection = Encoder.CreateSection(Section.IMPORT, importDef);
             codeSection = Encoder.CreateSection(Section.CODE, codeDef);
 
             Console.WriteLine("Type Section: {0}", Encoder.HexString(typeSection));

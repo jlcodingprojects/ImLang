@@ -22,6 +22,26 @@ namespace ImLang
     {
         public BodyNode(IEnumerator<Token> iter)
         {
+            // First register all function declarations so we can use recursion etc
+
+            bool fnNext = false;
+            while(iter.MoveNext())
+            {
+                if(iter.Current.TokenType == TokenType.FunctionDeclaration)
+                {
+                    fnNext = true;
+                    continue;
+                }
+                if(fnNext)
+                {
+                    Assert.TokenType(iter.Current, TokenType.Identifier);
+                    Parser.FunctionDefinitions.Add(iter.Current.Source);
+                    fnNext = false;
+                }
+            }
+
+            iter.Reset();
+
             iter.MoveNext();
             do
             {
@@ -161,7 +181,6 @@ namespace ImLang
 
             iter.MoveNext();
             Expression = NodeFactory.CreateBinaryExpressionTree(iter);
-
         }
 
         public IdentifierNode Target { get; set; }
@@ -192,8 +211,6 @@ namespace ImLang
 
             iter.MoveNext();
             Body = new StatementBlockNode(iter);
-
-            Parser.FunctionDefinitions.Add(this);
         }
 
         public IdentifierNode Identifier { get; set; }
@@ -201,6 +218,104 @@ namespace ImLang
         public ParamDeclarationNode Params { get; set; }
 
         public override string ToString() => $"{Identifier}";
+    }
+
+    public class IfStatement : Statement
+    {
+        public IfStatement(IEnumerator<Token> iter)
+        {
+            Assert.TokenType(iter.Current, TokenType.IfKeyword);
+
+            iter.MoveNext();
+
+            Assert.TokenType(iter.Current, TokenType.BracketOpen);
+
+            iter.MoveNext();
+            Left = NodeFactory.CreateBinaryExpressionTree(iter, TokenGroup.BooleanOperator);
+
+            Assert.TokenType(iter.Current, TokenType.BooleanOperator);
+            Operator = iter.Current switch
+            {
+                { Source: "==" } => BooleanOperator.Eq,
+                { Source: "!=" } => BooleanOperator.Ne,
+                { Source: "<" } => BooleanOperator.Lt,
+                { Source: ">" } => BooleanOperator.Gt,
+            };
+
+            iter.MoveNext();
+            Right = NodeFactory.CreateBinaryExpressionTree(iter, TokenGroup.ParamListSeparator);
+
+            Assert.TokenType(iter.Current, TokenType.BracketClose);
+            iter.MoveNext();
+            Body = new StatementBlockNode(iter);
+        }
+
+        public Node Left { get; set; }
+        public Node Right { get; set; }
+        public BooleanOperator Operator { get; set; }
+        public StatementBlockNode Body { get; set; }
+
+        public override string ToString() => $"if {Operator}";
+    }
+
+    public class WhileStatement : Statement
+    {
+        public WhileStatement(IEnumerator<Token> iter)
+        {
+            Assert.TokenType(iter.Current, TokenType.WhileKeyword);
+
+            iter.MoveNext();
+
+            Assert.TokenType(iter.Current, TokenType.BracketOpen);
+
+            iter.MoveNext();
+            Condition = NodeFactory.CreateBinaryExpressionTree(iter, TokenGroup.ParamListSeparator);
+
+            Assert.TokenType(iter.Current, TokenType.BracketClose);
+            iter.MoveNext();
+            Body = new StatementBlockNode(iter);
+        }
+
+        public Node Condition { get; set; }
+        public StatementBlockNode Body { get; set; }
+
+        public override string ToString() => $"while {Condition}";
+    }
+
+    public class LogStatement : Statement
+    {
+        public LogStatement(IEnumerator<Token> iter)
+        {
+            Assert.TokenType(iter.Current, TokenType.LogKeyword);
+
+            iter.MoveNext();
+
+            Assert.TokenType(iter.Current, TokenType.BracketOpen);
+
+            iter.MoveNext();
+            Expression = NodeFactory.CreateBinaryExpressionTree(iter, TokenGroup.ParamListSeparator);
+
+            Assert.TokenType(iter.Current, TokenType.BracketClose);
+            iter.MoveNext();
+        }
+
+        public Node Expression { get; set; }
+    }
+
+    public class DrawStatement : Statement
+    {
+        public DrawStatement(IEnumerator<Token> iter)
+        {
+            Assert.TokenType(iter.Current, TokenType.DrawKeyword);
+
+            iter.MoveNext();
+
+            Params = new ParamCallNode(iter);
+
+            iter.MoveNext();
+        }
+
+        public ParamCallNode Params { get; set; }
     }
 
 
@@ -299,8 +414,7 @@ namespace ImLang
             iter.MoveNext();
             Params = new ParamCallNode(iter);
 
-            //tokens.MoveNext();
-
+            if (iter.Current.TokenType == TokenType.EndOfLine) iter.MoveNext();
         }
     }
 

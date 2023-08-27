@@ -6,7 +6,7 @@ namespace ImLang
 {
     public class Func : IComparable<Func>
     {
-        public static void ResetGuid() => GUID = 0x00;
+        public static void ResetGuid() => GUID = 0x02;
         private List<byte> inParam;
         private List<byte> outParam;
         private List<byte> code;
@@ -16,7 +16,8 @@ namespace ImLang
         private byte index;
         private bool export;
 
-        private static byte GUID = 0x00;
+        // Start at 1 because we are importing one function
+        private static byte GUID = 0x02;
 
         public Func(string label, bool export = true)
         {
