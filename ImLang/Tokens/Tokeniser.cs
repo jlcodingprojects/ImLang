@@ -69,7 +69,8 @@ namespace ImLang
         public static readonly Regex Keyword = new Regex(@"^(if|while|return|print|setpixel)$");
 
         // Match valid datatype for declaring variables and returning from functions
-        public static readonly Regex VariableDatatype = new Regex(@"^(int32|int64|float32|float64)");
+        public static readonly Regex VariableDatatype = new Regex(@"^(int32)");
+        //public static readonly Regex VariableDatatype = new Regex(@"^(int32|int64|float32|float64)");
         //public static readonly Regex ReturnDatatype = new Regex(@"^(int32|int64|float32|float64|void)");
 
         // a valid identifier - must be declared before using

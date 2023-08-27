@@ -10,11 +10,11 @@ namespace ImLang
 {
     public static class Parser
     {
-        public static List<VariableDeclarationNode> VariableDefinitions { get; set; } = new List<VariableDeclarationNode>();
+        public static List<VariableDeclarationStatement> VariableDefinitions { get; set; } = new List<VariableDeclarationStatement>();
         public static List<FunctionDeclarationNode> FunctionDefinitions { get; set; } = new List<FunctionDeclarationNode>();
         public static Node Parse(List<Token> tokens)
         {
-            VariableDefinitions = new List<VariableDeclarationNode>();
+            VariableDefinitions = new List<VariableDeclarationStatement>();
             FunctionDefinitions = new List<FunctionDeclarationNode>();
 
             return new BodyNode(tokens.GetEnumerator());

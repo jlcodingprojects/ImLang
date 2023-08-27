@@ -10,15 +10,10 @@ using static ImLang.Enums;
 
 namespace ImLang
 {
-    public abstract class Node
-    {
-        public Node() { }
-        public Node(IEnumerator<Token> iter)
-        {
-            //iter.MoveNext();
-            //Iter = iter;
-        }
-    }
+    public abstract class Node { }
+
+    public abstract class Statement : Node { }
+    public abstract class LeafNode : Node { }
 
     /// <summary>
     /// The body of the source. Can only have function. Variable declarations in body are disabled for now
@@ -30,7 +25,7 @@ namespace ImLang
             iter.MoveNext();
             do
             {
-                functions.Add(iter.Current switch
+                Functions.Add(iter.Current switch
                 {
                     //{ TokenType: TokenType.VariableDeclaration } => new VariableDeclarationNode(iter),
                     { TokenType: TokenType.FunctionDeclaration } => new FunctionDeclarationNode(iter),
@@ -40,7 +35,7 @@ namespace ImLang
             while (iter.MoveNext());
         }
 
-        private List<Node> functions { get; set; } = new List<Node>();
+        public List<Node> Functions { get; set; } = new List<Node>();
     }
 
     // Program made up of nodes
@@ -61,32 +56,6 @@ namespace ImLang
     // Binary expression is simply a function call with two params, in the format LEFT OP RIGHT
     // FunctionCall is in the format FN Param1, Param2, ...
 
-    public class Statement : Node
-    {
-        public static Statement CreateStatment(IEnumerator<Token> iter)
-        {
-            if (!validTokens.Any(t => t == iter.Current.TokenGroup)) throw new UnexpectedTokenException(iter.Current, TokenGroup.Function);
-
-            return iter.Current switch
-            {
-                { TokenGroup: TokenGroup.Datatype } => new VariableDeclarationNode(iter),
-                //{ TokenType: TokenType.VariableDeclaration } => new VariableDeclarationNode(iter),
-                { TokenType: TokenType.Identifier } => CallExpressionNode.CreateIdentifierStatement(iter),
-                { Source: "return" } => new ReturnNode(iter),
-                { TokenType: TokenType.Keyword } => CallExpressionNode.CreateIdentifierStatement(iter),
-                _ => throw new UnexpectedTokenException(iter.Current, TokenGroup.Function)
-            };
-        }
-
-        private static readonly List<TokenGroup> validTokens = new List<TokenGroup>()
-        {
-            TokenGroup.Datatype,
-            TokenGroup.Function,
-            TokenGroup.Identifier,
-        };
-    }
-
-
     /// <summary>
     /// Parse valid expressions. This is either a literal or a CallExpression
     /// An expression consists of a function and parameters
@@ -94,74 +63,16 @@ namespace ImLang
     /// </summary>
     public class BinaryExpressionNode : Node
     {
-        // Parsing an expression tree is complex so do in a factory method
-        public static Node CreateBinaryExpressionTree(IEnumerator<Token> iter, TokenGroup terminator = TokenGroup.LineSeparator)
+        public BinaryExpressionNode(Token token)
         {
-            List<Token> tokens = new List<Token>();
-
-            // First gather all tokens to be used in the expression
-            while (iter.Current.TokenGroup != terminator)
+            Operator = token.Source switch
             {
-                tokens.Add(iter.Current);
-                iter.MoveNext();
-            }
-
-            return createBinaryExpressionTree(tokens);
-        }
-        private static Node createBinaryExpressionTree(List<Token> tokens, int startIndex = 0)
-        {
-            BinaryExpressionNode? rootNode = null;
-
-            for (int i = startIndex; i < tokens.Count; i++)
-            {
-                // If binary operator, recursively add left and right sides as nodes
-                // Left side must be literal as if it were a function it would have already been parsed
-                // Right side may be anything however, so feed in iterator to current node
-                if (tokens[i].TokenType == TokenType.BinaryOperator)
-                {
-                    Node leftSide = tokens[i - 1] switch
-                    {
-                        { TokenGroup: TokenGroup.Literal } => LiteralNode.CreateLiteralNode(tokens[i - 1]),
-                        { TokenType: TokenType.Identifier } => new IdentifierNode(tokens[i - 1]),
-                        _ => throw new UnexpectedTokenException(tokens[i - 1], TokenType.Identifier)
-                    };
-
-
-                    var newNode = new BinaryExpressionNode(tokens[i],
-                        leftSide,
-                        createBinaryExpressionTree(tokens.Skip(i + 1).ToList()));
-
-                    if (rootNode == null)
-                    {
-                        rootNode = newNode;
-                    }
-                    else
-                    {
-                        //var temp = rootNode;
-                        //newNode.Right = temp;
-                        rootNode.Right = newNode;
-                    }
-                }
-            }
-
-
-            // No binary operators were found
-            if (rootNode is null)
-            {
-                if (tokens.First().TokenGroup == TokenGroup.Literal)
-                {
-                    Assert.TokenGroup(tokens.First(), TokenGroup.Literal);
-                    return LiteralNode.CreateLiteralNode(tokens.First());
-                }
-
-                // Variable, since function calls are not supported inside binary expressions
-                if (tokens.First().TokenType == TokenType.Identifier)
-                {
-                    return CallExpressionNode.CreateIdentifierExpression(tokens.ToList());
-                }
-            }
-
-            return rootNode;
+                "+" => BinaryOperator.Add,
+                "-" => BinaryOperator.Subtract,
+                "*" => BinaryOperator.Multiply,
+                "/" => BinaryOperator.Divide,
+                _ => throw new NotImplementedException($"Operator {token.Source} doesnt exist at position {token.StartOffset}")
+            };
         }
         public BinaryExpressionNode(Token token, Node left, Node right)
         {
@@ -192,13 +103,13 @@ namespace ImLang
         };
     }
 
-    public class VariableDeclarationNode : Statement
+    public class VariableDeclarationStatement : Statement
     {
         /// <summary>
         /// Expect Identifier Operator Expression
         /// </summary>
         /// <param name="iter"></param>
-        public VariableDeclarationNode(IEnumerator<Token> iter, TokenGroup terminator = TokenGroup.LineSeparator)
+        public VariableDeclarationStatement(IEnumerator<Token> iter, TokenGroup terminator = TokenGroup.LineSeparator)
         {
             Assert.TokenGroup(iter.Current, TokenGroup.Datatype);
 
@@ -216,7 +127,7 @@ namespace ImLang
 
             // Valid tokens to create expression are { '(', IdentifierNode, Literal }
             iter.MoveNext();
-            Expression = BinaryExpressionNode.CreateBinaryExpressionTree(iter);
+            Expression = NodeFactory.CreateBinaryExpressionTree(iter);
 
             // CreateExpressionTree will consume the semi-colon
             //iter.MoveNext();
@@ -236,6 +147,25 @@ namespace ImLang
         public OperatorNode(IEnumerator<Token> iter)
         {
         }
+    }
+
+    public class AssignmentStatement : Statement
+    {
+        public AssignmentStatement(IEnumerator<Token> iter)
+        {
+            Assert.TokenType(iter.Current, TokenType.Identifier);
+            Target = new IdentifierNode(iter.Current);
+
+            iter.MoveNext();
+            Assert.TokenType(iter.Current, TokenType.Assignment);
+
+            iter.MoveNext();
+            Expression = NodeFactory.CreateBinaryExpressionTree(iter);
+
+        }
+
+        public IdentifierNode Target { get; set; }
+        public Node Expression { get; set; }
     }
 
     public class AssignmentNode : Node
@@ -272,6 +202,7 @@ namespace ImLang
 
         public override string ToString() => $"{Identifier}";
     }
+
 
     // Identifier = ;
     public class VariableAssignment : Statement
@@ -331,64 +262,34 @@ namespace ImLang
         public override string ToString() => Datatype.ToString();
     }
 
-    public class IdentifierAsStatementNode : Statement
+    public class RefVariableNode : Node
     {
         public IdentifierNode Identifier;
 
-        public IdentifierAsStatementNode(Token token)
+        public RefVariableNode(IEnumerator<Token> iter)
+        {
+            Assert.TokenType(iter.Current, TokenType.Identifier);
+
+            Identifier = new IdentifierNode(iter.Current);
+            iter.MoveNext();
+        }
+        public RefVariableNode(Token token)
         {
             Identifier = new IdentifierNode(token);
         }
+
+        public override string ToString()
+        {
+            return Identifier.ToString();
+        }
     }
 
-    public class CallExpressionNode : Statement
+    public class FunctionCallStatement : Statement
     {
         public IdentifierNode Identifier;
         public ParamCallNode Params { get; set; }
 
-        public static Statement CreateIdentifierStatement(IEnumerator<Token> iter)
-        {
-            Stack<TokenType> bracketStack = new Stack<TokenType>();
-            List<Token> tokens = new List<Token>();
-
-            Assert.TokenType(iter.Current, TokenType.Identifier);
-            iter.MoveNext();
-            Assert.TokenType(iter.Current, TokenType.BracketOpen);
-
-            bracketStack.Push(TokenType.BracketOpen);
-            int bracketCount = 1;
-            while (bracketCount > 0)
-            {
-                tokens.Add(iter.Current);
-                if (iter.Current.TokenType == TokenType.BracketOpen)
-                {
-                    bracketStack.Push(TokenType.BracketOpen);
-                    bracketCount++;
-                }
-                if (iter.Current.TokenType == TokenType.BracketClose)
-                {
-                    if (bracketStack.Pop() != TokenType.BracketClose) throw new InvalidOperationException($"Invalid brackets at {iter.Current.Source} at {iter.Current.StartOffset}");
-                    bracketStack.Push(TokenType.BracketClose);
-                    bracketCount--;
-                }
-            }
-
-            return CreateIdentifierExpression(tokens);
-        }
-        public static Statement CreateIdentifierExpression(List<Token> tokens)
-        {
-            Assert.TokenType(tokens.First(), TokenType.Identifier);
-
-            var type = Parser.GetIdentifierType(tokens.First().Source);
-
-            return type switch
-            {
-                IdentifierType.Variable => new IdentifierAsStatementNode(tokens.First()),
-                IdentifierType.Function => new CallExpressionNode(tokens),
-            };
-        }
-
-        public CallExpressionNode(List<Token> tokens)
+        public FunctionCallStatement(List<Token> tokens)
         {
             // Must start and end with '(' and ')' and have comma deliminated expressions in-between
             Identifier = new IdentifierNode(tokens.First());
@@ -403,39 +304,19 @@ namespace ImLang
         }
     }
 
-    public class CallFunctionNode : Statement
-    {
-        public CallFunctionNode(IEnumerator<Token> iter)
-        {
-
-        }
-    }
-
-    public class ReturnNode : Statement
+    public class ReturnStatement : Statement
     {
         public Node Return;
 
-        public ReturnNode(IEnumerator<Token> iter)
+        public ReturnStatement(IEnumerator<Token> iter)
         {
             iter.MoveNext();
-            Return = BinaryExpressionNode.CreateBinaryExpressionTree(iter);
+            Return = NodeFactory.CreateBinaryExpressionTree(iter);
         }
     }
 
     public class LiteralNode : Node
     {
-        public static LiteralNode CreateLiteralNode(Token token)
-        {
-            if (token.TokenGroup != TokenGroup.Literal) throw new UnexpectedTokenException(token, TokenGroup.Literal);
-            return token switch
-            {
-                { TokenType: TokenType.LiteralString } => new StringLiteralNode(token),
-                { TokenType: TokenType.LiteralInt } => new IntLiteralNode(token),
-                { TokenType: TokenType.LiteralFloat } => new FloatLiteralNode(token),
-                _ => throw new UnexpectedTokenException(token, TokenType.LiteralInt)
-            };
-        }
-
         public LiteralNode(IEnumerator<Token> iter) { }
         public LiteralNode() { }
     }
@@ -456,10 +337,10 @@ namespace ImLang
     {
         public IntLiteralNode(Token token)
         {
-            Value = long.Parse(token.Source);
+            Value = int.Parse(token.Source);
         }
 
-        public long Value { get; set; } = 0;
+        public int Value { get; set; } = 0;
         public override string ToString() => Value.ToString();
     }
 
@@ -485,7 +366,7 @@ namespace ImLang
 
             do
             {
-                Statements.Add(Statement.CreateStatment(iter));
+                Statements.Add(NodeFactory.CreateStatment(iter));
                 if (!iter.MoveNext()) throw new UnexpectedTokenException(iter.Current, TokenType.CurlyBracketClose);
             }
             while (iter.Current.TokenType != TokenType.CurlyBracketClose);
@@ -502,32 +383,31 @@ namespace ImLang
             if (iter.Current.TokenType != TokenType.BracketOpen) throw new UnexpectedTokenException(iter.Current, TokenType.BracketOpen);
 
             iter.MoveNext();
-            // Statements can begin only with identifiers, keywords, and variable declarations
+            if (iter.Current.TokenType == TokenType.BracketClose) return;
 
             do
             {
-                ParamList.Add(new VariableDeclarationNode(iter, TokenGroup.ParamListSeparator));
+                ParamList.Add(new VariableDeclarationStatement(iter, TokenGroup.ParamListSeparator));
                 if ((iter.Current.TokenType != TokenType.BracketClose) && !iter.MoveNext()) throw new UnexpectedTokenException(iter.Current, TokenType.BracketClose);
             }
             while (iter.Current.TokenType != TokenType.BracketClose);
 
         }
 
-        public List<VariableDeclarationNode> ParamList { get; set; } = new();
+        public List<VariableDeclarationStatement> ParamList { get; set; } = new();
     }
 
     public class ParamCallNode : Node
     {
         public ParamCallNode(IEnumerator<Token> iter)
         {
-            if (iter.Current.TokenType != TokenType.BracketOpen) throw new UnexpectedTokenException(iter.Current, TokenType.BracketOpen);
-
+            Assert.TokenType(iter.Current, TokenType.BracketOpen);
             iter.MoveNext();
-            // Statements can begin only with identifiers, keywords, and variable declarations
+            if (iter.Current.TokenType == TokenType.BracketClose) return;
 
             do
             {
-                ParamList.Add(BinaryExpressionNode.CreateBinaryExpressionTree(iter, TokenGroup.ParamListSeparator));
+                ParamList.Add(NodeFactory.CreateBinaryExpressionTree(iter, TokenGroup.ParamListSeparator));
                 if ((iter.Current.TokenType != TokenType.BracketClose) && !iter.MoveNext()) throw new UnexpectedTokenException(iter.Current, TokenType.BracketClose);
             }
             while (iter.Current.TokenType != TokenType.BracketClose);

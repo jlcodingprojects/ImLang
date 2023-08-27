@@ -3,12 +3,13 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using ImLang.Compilation;
 
 namespace ImLang
 {
     class Program
     {
-        
+
         public static void Main(string[] args)
         {
             string filename = "imlang.wasm";
@@ -21,28 +22,61 @@ namespace ImLang
             //File.WriteAllText("imlang.htm", executableHtml);
             //compiler.BuildWasm();
             string sourceTest = @"
-fn add(int32 left, int32 right)
+fn fourtytwo()
 {
-  int32 result = left + right;
-  return  result;
+  return 42;
 }
 
 fn subtract(int32 left, int32 right)
 {
-  int32 result = left - add(right, 0);
-  return  result;
+  int32 result = left - right;
+  return result;
+}
+
+fn mul(int32 left, int32 right)
+{
+  int32 result = left * right;
+  return result;
+}
+
+fn add(int32 left, int32 right)
+{
+  int32 result = left + fourtytwo ();
+  return result;
+}
+
+fn bling(int32 left, int32 right, int32 nextRight)
+{
+  int32 result = left + mul(right + nextRight, fourtytwo());
+  return result;
 }
 ";
+            /*fn subtract(int32 left, int32 right) {
+              int32 result = left - add(right, 0)
+            ;
+              return  result;
+            }*/
 
             List<Token> tokens = Tokeniser.GetTokenArray(sourceTest);
-
             var body = Parser.Parse(tokens);
+
+
+            var binary = Compiler.BuildBinaryFromAST((BodyNode)body);
+            var binar2y = Compiler.BuildBinaryFromAST((BodyNode)body);
+            //var linkedlist = Compiler.MakeLinkedListBinary().GetExecutableHtml();
+
+            var htm = binary.GetExecutableHtml();
+            //var bin = binar2y.GetBinary();
+
+
+            //File.WriteAllText($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}/LIST.htm", linkedlist);
+            //File.WriteAllBytes($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}/BIN.wasm", bin);
+            File.WriteAllText($"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}/BIN.htm", htm);
 
             // Parse with recursive node structure
 
             Console.WriteLine("Compiling...");
             Console.Write("Built: " + filename);
-            Console.ReadKey(true);
         }
     }
 }
