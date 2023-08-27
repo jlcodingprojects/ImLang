@@ -1,17 +1,20 @@
-fn mul(int32 left, int32 right)
-{
-  int32 result = left * right;
-  return result;
-}
-
 fn add(int32 left, int32 right)
 {
   int32 result = left + right;
+  if(result == fortytwo())
+  {
+    result = 1337;
+  }
+
   return result;
 }
 
-fn drawit(int32 left, int32 right, int32 col)
+fn fortytwo()
 {
-  log(left);
-  draw(left, right, col);
+  return 42;
+}
+
+fn drawit(int32 x, int32 y)
+{
+  draw(x, y, 150);
 }
