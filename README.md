@@ -1,5 +1,9 @@
 # ImmortalLang
-My goal is to create my own programming language, parser, and compiler
+My goal is to create my own programming language. 
+
+Currently the tokeniser, parser, and compiler are all functional. However many features of a proper programming language are yet to be implemented.
+
+It only supports int32 datatype, and doesnt have any memory allocation features. The next features to be implemented will be memory allocation and extra datatypes
 
 
 
