@@ -1,16 +1,20 @@
 # ImmortalLang
-My goal is to create my own programming language, parser, and compiler. I'm starting out following this tutorial: http://blog.scottlogic.com/2019/05/17/webassembly-compiler.html
+My goal is to create my own programming language, parser, and compiler
+
+
 
 ## Usage
 
-Compile and run. It will compile the file example.iml by default. Supply filename in parameter
+Compile and run. It will compile the file example.iml by default. Optonally supply filename in parameter
 
-- ImLang.exe filename.iml
+`ImLang.exe filename.iml`
 
 It will create filename.htm which is a template with the .wasm file embedded. Open to see a basic UI for running functions
 
 ## Example ImLang code:
 
+
+```
 fn add(int32 left, int32 right)
 {
   int32 result = left + right;
@@ -31,6 +35,7 @@ fn drawit(int32 x, int32 y)
 {
   draw(x, y, 150);
 }
+```
 
 ## Current Features:
 
@@ -42,6 +47,15 @@ fn drawit(int32 x, int32 y)
 
 - All variables are static global. This will be changed in a future update so they are declared in scope and cleared out after
 - - Unfortunately this means recursion isnt currently possible
+
+
+## Resources used in building
+
+http://blog.scottlogic.com/2019/05/17/webassembly-compiler.html
+
+https://github.com/sunfishcode/wasm-reference-manual/blob/master/WebAssembly.md#return
+
+
 
 
 ## Eventual Features:
@@ -60,8 +74,8 @@ Ideally I will implement all the features required to build the ImmortalLang com
 
 `[DONE]` Binary expression parsing
 
-`[Todo]` Control flow statements
+`[DONE]` Control flow statements
 
-`[Todo]` Add variables
+`[DONE]` Add variables
 
-`[Todo]` Functions/classes
+`[Partial]` Functions/classes
